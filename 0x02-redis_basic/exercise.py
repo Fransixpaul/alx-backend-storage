@@ -45,16 +45,14 @@ def call_history(method: Callable) -> Callable:
         input_key = f"{method.__qualname__}:inputs"
         output_key = f"{method.__qualname__}:outputs"
 
-        print(f"Calling {method.__qualname__} with arguments {args}")
-
         # Store the input arguments by pushing them to the inputs list
         self._redis.rpush(input_key, str(args))
 
         # Call the original method and store the output
         result = method(self, *args, **kwargs)
-        print(f"{method.__qualname__} returned {result}")
         
-        self.redis.rpush(output_key, str(result))
+        # Store the output result in Redis
+        self._redis.rpush(output_key, str(result))
 
         return result
     
@@ -67,6 +65,7 @@ class Cache:
         self._redis.flushdb()
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         random_key = str(uuid.uuid4())
         self._redis.set(random_key, data)
