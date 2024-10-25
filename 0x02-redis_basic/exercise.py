@@ -9,6 +9,30 @@ from typing import Union, Callable, Optional
 import functools
 
 
+def replay(method: Callable) -> None:
+    """
+    Displays the history of calls of a particular function.
+
+    Args:
+        method (Callable): The function for which to display the call history.
+    """
+    method_name = method.__qualname__
+    input_key = f"{method_name}:inputs"
+    output_key = f"{method_name}:outputs"
+
+    inputs = method.__self__._redis.lrange(input_key, 0, -1)
+    outputs = method.__self__._redis.lrange(output_key, 0, -1)
+
+    # Display number of calls
+    call_count = len(inputs)
+    print(f"{method_name} was called {call_count} times:")
+
+    # Display each call
+    for input_data, output_data in zip(inputs, outputs):
+        # Decode input_data properly to avoid issues with tuple format
+        print(f"{method_name}(*{eval(input_data.decode('utf-8'))}) -> {output_data.decode('utf-8')}")
+
+
 def count_calls(method: Callable) -> Callable:
     """
     A decorator that counts the number of calls to a method of the Cache class.
